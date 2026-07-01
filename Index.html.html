@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>A320 Preguntados · Habilitación TAC</title>
+<style>
+  :root{
+    --bg:#0b1120; --bg2:#111a2e; --card:#16223b; --card2:#1d2c4a;
+    --txt:#eef2ff; --mut:#8ea0c4; --line:#26324f;
+    --ok:#22c55e; --bad:#ef4444; --gold:#fbbf24;
+    --shadow:0 10px 40px -12px rgba(0,0,0,.6);
+    --general:#3b82f6; --cabina:#10b981; --salidas:#ef4444;
+    --iluminacion:#f59e0b; --evacuacion:#8b5cf6; --oxigeno:#06b6d4; --mando:#ec4899;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 50% -10%,#1a2748 0%,var(--bg) 55%);
+    color:var(--txt);min-height:100dvh;display:flex;flex-direction:column;align-items:center;
+    padding:16px 14px 40px;overflow-x:hidden;
+  }
+  .wrap{width:100%;max-width:560px;flex:1;display:flex;flex-direction:column}
+  .hidden{display:none!important}
+  button{font-family:inherit;cursor:pointer;border:none;color:inherit}
+
+  /* Header */
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.3px}
+  .brand .plane{font-size:26px;filter:drop-shadow(0 4px 8px rgba(59,130,246,.5))}
+  .brand small{display:block;font-size:11px;color:var(--mut);font-weight:600;letter-spacing:1.5px;text-transform:uppercase}
+  .icobtn{width:40px;height:40px;border-radius:12px;background:var(--card);display:grid;place-items:center;font-size:18px;border:1px solid var(--line)}
+
+  /* Hero */
+  .hero{text-align:center;padding:8px 0 22px}
+  .hero h1{font-size:30px;line-height:1.1;font-weight:850;letter-spacing:-.5px}
+  .hero h1 span{background:linear-gradient(90deg,var(--general),var(--oxigeno));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{color:var(--mut);margin-top:8px;font-size:14px}
+
+  /* Stats strip */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 8px;text-align:center}
+  .stat b{font-size:22px;font-weight:800;display:block}
+  .stat span{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}
+
+  .section-t{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin:6px 4px 12px}
+
+  /* Mode cards */
+  .modes{display:flex;flex-direction:column;gap:12px;margin-bottom:26px}
+  .mode{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;text-align:left;transition:transform .12s,border-color .12s;width:100%}
+  .mode:active{transform:scale(.98)}
+  .mode:hover{border-color:#3a4b6e}
+  .mode .m-ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:24px;flex-shrink:0}
+  .mode .m-tx b{font-size:16px;font-weight:750;display:block}
+  .mode .m-tx span{font-size:12.5px;color:var(--mut)}
+  .mode .m-arrow{margin-left:auto;color:var(--mut);font-size:20px}
+
+  /* Category grid */
+  .cats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .catcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;text-align:left;position:relative;overflow:hidden;transition:transform .12s}
+  .catcard:active{transform:scale(.97)}
+  .catcard .cc-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .catcard .cc-em{font-size:22px}
+  .catcard .cc-name{font-size:13px;font-weight:700;line-height:1.15}
+  .catcard .cc-bar{height:6px;border-radius:6px;background:#0d1526;overflow:hidden;margin-bottom:6px}
+  .catcard .cc-fill{height:100%;border-radius:6px;transition:width .5s}
+  .catcard .cc-meta{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--mut)}
+  .crown{position:absolute;top:10px;right:10px;font-size:16px;opacity:.25}
+  .crown.on{opacity:1;filter:drop-shadow(0 2px 6px rgba(251,191,36,.6))}
+
+  /* Wheel */
+  #wheelScreen{align-items:center;justify-content:center;text-align:center;flex:1;display:flex;flex-direction:column;gap:20px;padding-top:10px}
+  .wheelbox{position:relative;width:min(78vw,320px);height:min(78vw,320px)}
+  .pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:26px solid #fff;z-index:5;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5))}
+  .wheel{width:100%;height:100%;border-radius:50%;position:relative;transition:transform 4s cubic-bezier(.15,.9,.25,1);border:6px solid #0b1120;box-shadow:0 0 0 4px #26324f, var(--shadow)}
+  .wheel .seg-lbl{position:absolute;top:50%;left:50%;font-size:22px;transform-origin:0 0}
+  .wheelcap{position:absolute;top:50%;left:50%;width:52px;height:52px;border-radius:50%;transform:translate(-50%,-50%);background:#0b1120;border:3px solid #26324f;display:grid;place-items:center;font-size:22px;z-index:4}
+
+  /* Quiz */
+  #quizScreen{flex:1;display:flex;flex-direction:column}
+  .qhead{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .qhead .qexit{width:38px;height:38px;border-radius:11px;background:var(--card);border:1px solid var(--line);font-size:16px;display:grid;place-items:center}
+  .catbadge{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:700;color:#fff}
+  .qhud{margin-left:auto;display:flex;align-items:center;gap:12px;font-weight:800;font-size:14px}
+  .qhud .lives{letter-spacing:2px}
+  .qhud .streak{color:var(--gold)}
+  .progline{height:6px;background:#0d1526;border-radius:6px;overflow:hidden;margin-bottom:6px}
+  .progfill{height:100%;background:linear-gradient(90deg,var(--general),var(--oxigeno));transition:width .3s}
+  .timerline{height:5px;background:#0d1526;border-radius:6px;overflow:hidden;margin-bottom:20px}
+  .timerfill{height:100%;background:var(--ok);width:100%;transition:width .25s linear,background .3s}
+  .qcount{font-size:12px;color:var(--mut);margin-bottom:16px;text-align:center;font-weight:600}
+  .qtext{font-size:20px;line-height:1.35;font-weight:750;margin-bottom:22px;flex-shrink:0}
+  .opts{display:flex;flex-direction:column;gap:11px}
+  .opt{background:var(--card);border:1.5px solid var(--line);border-radius:15px;padding:15px 16px;font-size:15px;text-align:left;display:flex;align-items:center;gap:12px;transition:transform .1s,border-color .15s,background .15s;line-height:1.3}
+  .opt:active{transform:scale(.98)}
+  .opt .kdot{width:26px;height:26px;border-radius:8px;background:#0d1526;display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--mut);flex-shrink:0;transition:.15s}
+  .opt.correct{border-color:var(--ok);background:rgba(34,197,94,.14)}
+  .opt.correct .kdot{background:var(--ok);color:#062}
+  .opt.wrong{border-color:var(--bad);background:rgba(239,68,68,.13)}
+  .opt.wrong .kdot{background:var(--bad);color:#fff}
+  .opt.dim{opacity:.45}
+  .opt[disabled]{cursor:default}
+
+  .explain{margin-top:18px;background:var(--card2);border:1px solid var(--line);border-left:4px solid var(--general);border-radius:14px;padding:14px 16px;font-size:14px;line-height:1.5;color:#dbe6ff}
+  .explain b{color:#fff}
+  .verdict{font-weight:800;font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+  .next{margin-top:16px;width:100%;padding:16px;border-radius:15px;font-size:16px;font-weight:800;background:linear-gradient(90deg,var(--general),#2563eb);color:#fff;box-shadow:0 8px 20px -6px rgba(37,99,235,.6)}
+  .next:active{transform:scale(.98)}
+
+  /* Results */
+  #resultScreen{flex:1;display:flex;flex-direction:column;text-align:center;justify-content:center}
+  .medal{font-size:64px;margin-bottom:4px}
+  .rtitle{font-size:26px;font-weight:850}
+  .rsub{color:var(--mut);margin-top:6px;margin-bottom:22px;font-size:14px}
+  .scorebig{font-size:56px;font-weight:850;line-height:1;background:linear-gradient(90deg,var(--gold),#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 0}
+  .rbox{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .rbox b{font-size:24px;display:block}
+  .rbox span{font-size:12px;color:var(--mut)}
+  .rbreak{text-align:left;margin-top:8px}
+  .rrow{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px}
+  .rrow .rdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .rrow .rname{flex:1}
+  .rrow .rpct{font-weight:700;color:var(--mut)}
+  .btnrow{display:flex;gap:12px;margin-top:24px}
+  .btn2{flex:1;padding:15px;border-radius:15px;font-weight:800;font-size:15px}
+  .btn-primary{background:linear-gradient(90deg,var(--general),#2563eb);color:#fff}
+  .btn-ghost{background:var(--card);border:1px solid var(--line);color:var(--txt)}
+
+  .foot{text-align:center;color:var(--mut);font-size:11px;margin-top:26px;line-height:1.5}
+  .fade{animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .pop{animation:pop .3s}
+  @keyframes pop{0%{transform:scale(.9)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== HOME ===== -->
+  <div id="homeScreen">
+    <div class="topbar">
+      <div class="brand">
+        <span class="plane">✈️</span>
+        <div>A320 Preguntados<small>Habilitación TAC · ALAS</small></div>
+      </div>
+      <button class="icobtn" id="soundBtn" title="Sonido">🔊</button>
+    </div>
+
+    <div class="hero">
+      <h1>Estudia la <span>habilitación A320</span> jugando</h1>
+      <p>7 módulos · <b id="qtotal">0</b> preguntas · con explicación en cada respuesta</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="stStreak">0</b><span>Mejor racha</span></div>
+      <div class="stat"><b id="stAcc">0%</b><span>Precisión</span></div>
+      <div class="stat"><b id="stCrowns">0/7</b><span>Coronas</span></div>
+    </div>
+
+    <div class="section-t">Modos de juego</div>
+    <div class="modes">
+      <button class="mode" data-mode="ruleta">
+        <div class="m-ic" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6)">🎡</div>
+        <div class="m-tx"><b>Ruleta</b><span>Gira, cae una categoría y responde. 3 vidas, racha infinita.</span></div>
+        <div class="m-arrow">›</div>
+      </button>
+      <button class="mode" data-mode="examen">
+        <div class="m-ic" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">📝</div>
+        <div class="m-tx"><b>Examen</b><span>20 preguntas al azar de todo el temario. Nota final.</span></div>
+        <div class="m-arrow">›</div>
+      </button>
+      <button class="mode" data-mode="flash">
+        <div class="m-ic" style="background:linear-gradient(135deg,#10b981,#06b6d4)">⚡</div>
+        <div class="m-tx"><b>Repaso relámpago</b><span>10 preguntas rápidas mezcladas, sin castigo. Ideal antes de clase.</span></div>
+        <div class="m-arrow">›</div>
+      </button>
+    </div>
+
+    <div class="section-t">Estudiar por módulo</div>
+    <div class="cats" id="catGrid"></div>
+
+    <div class="foot">
+      El progreso se guarda en este dispositivo.<br>
+      Basado en el material A320 (Días 1–4) · MTAC · ALAS para Latinoamérica.
+    </div>
+  </div>
+
+  <!-- ===== WHEEL ===== -->
+  <div id="wheelScreen" class="hidden">
+    <div class="qhead" style="width:100%">
+      <button class="qexit" onclick="goHome()">✕</button>
+      <div class="qhud"><span class="lives" id="wLives">❤️❤️❤️</span><span class="streak" id="wStreak">🔥0</span></div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px">
+      <div class="wheelbox">
+        <div class="pointer"></div>
+        <div class="wheel" id="wheel"></div>
+        <div class="wheelcap">🎯</div>
+      </div>
+      <button class="next" id="spinBtn" style="max-width:260px">Girar la ruleta 🎡</button>
+    </div>
+  </div>
+
+  <!-- ===== QUIZ ===== -->
+  <div id="quizScreen" class="hidden">
+    <div class="qhead">
+      <button class="qexit" onclick="goHome()">✕</button>
+      <span class="catbadge" id="qCat">Categoría</span>
+      <div class="qhud">
+        <span class="lives" id="qLives"></span>
+        <span class="streak" id="qStreak"></span>
+      </div>
+    </div>
+    <div class="progline"><div class="progfill" id="qProg"></div></div>
+    <div class="timerline"><div class="timerfill" id="qTimer"></div></div>
+    <div class="qcount" id="qCount"></div>
+    <div class="qtext" id="qText"></div>
+    <div class="opts" id="qOpts"></div>
+    <div id="qFeedback"></div>
+  </div>
+
+  <!-- ===== RESULT ===== -->
+  <div id="resultScreen" class="hidden">
+    <div class="medal" id="rMedal">🏅</div>
+    <div class="rtitle" id="rTitle">¡Listo!</div>
+    <div class="rsub" id="rSub"></div>
+    <div class="scorebig" id="rScore">0</div>
+    <div class="rgrid">
+      <div class="rbox"><b id="rCorrect">0</b><span>Correctas</span></div>
+      <div class="rbox"><b id="rAcc">0%</b><span>Precisión</span></div>
+    </div>
+    <div id="rBreak" class="rbreak"></div>
+    <div class="btnrow">
+      <button class="btn2 btn-ghost" onclick="goHome()">Menú</button>
+      <button class="btn2 btn-primary" id="rReplay">Jugar otra vez</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================ DATOS ============================ */
+const CATS = [
+  {id:'general',     name:'Información General', short:'General',      color:'#3b82f6', emoji:'✈️'},
+  {id:'cabina',      name:'Cabina de Pasajeros',short:'Cabina Pax',   color:'#10b981', emoji:'🪑'},
+  {id:'salidas',     name:'Salidas de Emergencia',short:'Salidas',    color:'#ef4444', emoji:'🚪'},
+  {id:'iluminacion', name:'Iluminación',        short:'Iluminación',  color:'#f59e0b', emoji:'💡'},
+  {id:'evacuacion',  name:'Disp. de Evacuación',short:'Evacuación',   color:'#8b5cf6', emoji:'🛟'},
+  {id:'oxigeno',     name:'Sistema de Oxígeno', short:'Oxígeno',      color:'#06b6d4', emoji:'😷'},
+  {id:'mando',       name:'Cabina de Mando',    short:'Mando',        color:'#ec4899', emoji:'🎛️'},
+];
+const CATMAP = Object.fromEntries(CATS.map(c=>[c.id,c]));
+
+// o[0] SIEMPRE es la respuesta correcta (se mezclan al mostrar)
+const Q = [
+/* ---------- GENERAL ---------- */
+{c:'general',q:'¿Qué tipo de fuselaje tiene el A320?',o:['Fuselaje angosto de 1 pasillo','Fuselaje ancho de 2 pasillos','Fuselaje de doble cubierta','Fuselaje sin pasillo central'],e:'El A320 es de fuselaje angosto (narrow-body) con un solo pasillo.'},
+{c:'general',q:'¿Cuántos motores tiene el A320 y dónde se montan?',o:['Dos motores bajo las alas','Dos motores en el empenaje','Cuatro motores bajo las alas','Un motor en la cola'],e:'Dos motores montados bajo las alas.'},
+{c:'general',q:'¿Cuál es la autonomía aproximada del A320?',o:['Aprox. 6 horas (corto a mediano alcance)','Aprox. 3 horas','Aprox. 12 horas (largo alcance)','Aprox. 1 hora'],e:'Autonomía de corto a mediano alcance, aproximadamente 6 horas.'},
+{c:'general',q:'¿Cuál es el techo operacional del A320?',o:['39.000 pies','25.000 pies','45.000 pies','14.000 pies'],e:'Techo operacional: 39.000 pies.'},
+{c:'general',q:'¿Cuál es la velocidad crucero del A320?',o:['880 km/h','650 km/h','1.100 km/h','500 km/h'],e:'Velocidad crucero: 880 km/h.'},
+{c:'general',q:'¿Cuánto mide el largo del fuselaje del A320?',o:['39 metros','34 metros','45 metros','25 metros'],e:'Largo del fuselaje: 39 metros.'},
+{c:'general',q:'¿Cuál es la envergadura del A320?',o:['34 metros','39 metros','28 metros','44 metros'],e:'Envergadura (punta a punta de alas): 34 metros.'},
+{c:'general',q:'¿Qué altura tiene el A320?',o:['3,40 metros','5,20 metros','2,10 metros','4,80 metros'],e:'Altura: 3,40 metros.'},
+{c:'general',q:'¿Qué sistema de control de vuelo utiliza el A320?',o:['Fly by Wire','Cables y poleas mecánicas','Control totalmente manual','Sistema hidráulico puro sin computador'],e:'El A320 usa Fly by Wire: las órdenes de mando son eléctricas.'},
+{c:'general',q:'En Fly by Wire, las superficies de control primarias y secundarias son:',o:['Eléctricamente controladas e hidráulicamente activas','Mecánicamente controladas y eléctricamente activas','Neumáticamente controladas','Manualmente controladas por cables'],e:'Son eléctricamente controladas e hidráulicamente activas.'},
+{c:'general',q:'¿Con qué se controla el cabeceo, alabeo y los virajes en el A320?',o:['Bastones laterales de mando (sidestick)','Un volante central','Pedales solamente','Palancas de potencia'],e:'Los sidestick laterales controlan cabeceo y alabeo, coordinados con el timón de dirección.'},
+{c:'general',q:'¿Qué sistema de monitoreo tiene el A320 en la cabina de mando?',o:['ECAM','CIDS','FADEC','TCAS'],e:'ECAM: Electronic Centralized Aircraft Monitoring.'},
+{c:'general',q:'¿Qué es la APU del A320?',o:['Una turbina en el empenaje que suministra energía eléctrica y neumática','Un motor de reserva bajo el ala','Una bomba hidráulica de emergencia','Un tanque auxiliar de combustible'],e:'APU (Auxiliary Power Unit): turbina en el empenaje que da energía eléctrica y neumática.'},
+{c:'general',q:'¿En qué condiciones funciona la APU?',o:['En tierra y/o en vuelo, a requerimiento de los pilotos','Solo en tierra','Solo en vuelo de crucero','Solo durante el despegue'],e:'Funciona en tierra y/o vuelo, a requerimiento de los pilotos.'},
+{c:'general',q:'El tren de aterrizaje principal del A320 tiene:',o:['2 piernas y se retracta hacia el centro','1 pierna dirigible','2 piernas y se retracta hacia adelante','4 piernas fijas'],e:'Tren principal: 2 piernas, con frenos, se retracta hacia el centro.'},
+{c:'general',q:'El tren de nariz del A320:',o:['Tiene 1 pierna, es dirigible y se retracta hacia adelante','Tiene 2 piernas y se retracta al centro','Es fijo y no se retracta','Tiene frenos independientes'],e:'Tren de nariz: 1 pierna, dirigible, se retracta hacia adelante.'},
+{c:'general',q:'¿Qué fuentes suministran el aire fresco del aire acondicionado?',o:['Los motores y la APU','Solo la APU','Compresores eléctricos independientes','El carro de tierra únicamente'],e:'Los motores y la APU suministran aire fresco.'},
+{c:'general',q:'¿Cuántos tanques de combustible tiene el A320 y dónde?',o:['Dos en las alas y uno central en el fuselaje','Uno en cada ala solamente','Uno solo en el fuselaje','Cuatro, dos por ala'],e:'Dos tanques en las alas y uno en el sector central del fuselaje.'},
+{c:'general',q:'¿Por dónde se efectúa el carguío de combustible?',o:['A presión por el ala derecha (RH)','A presión por el ala izquierda (LH)','Por gravedad desde arriba del fuselaje','Por la nariz del avión'],e:'El carguío se efectúa a presión por el ala RH (derecha).'},
+{c:'general',q:'¿El A320 tiene vaciado rápido de combustible (fuel dumping)?',o:['No, no tiene vaciado rápido','Sí, por ambas alas','Sí, solo por el ala izquierda','Sí, desde el tanque central'],e:'El A320 NO tiene vaciado rápido de combustible.'},
+{c:'general',q:'¿Cuántas bodegas tiene el A320?',o:['Dos presurizadas más una pequeña llamada bulk','Una sola bodega central','Tres bodegas del mismo tamaño','Ninguna, la carga va en cabina'],e:'Dos bodegas presurizadas más una pequeña bodega bulk.'},
+{c:'general',q:'¿Qué característica especial tiene la bodega bulk?',o:['Es presurizada y calefaccionada','No es presurizada','Está en la parte alta del fuselaje','Solo transporta líquidos'],e:'La bulk es presurizada y calefaccionada.'},
+{c:'general',q:'¿Por qué lado se accede a las bodegas del A320?',o:['Por el lado derecho (RH)','Por el lado izquierdo (LH)','Por la parte superior','Desde la cabina de pasajeros'],e:'Las bodegas tienen acceso por el lado RH (derecho).'},
+{c:'general',q:'¿Con qué sistema de seguridad están equipadas las bodegas?',o:['Sistema fijo de detección y extinción de fuego, controlado desde cabina de mando','Solo detectores de humo portátiles','Extintores manuales operados por la TC','No tienen sistema contra incendios'],e:'Sistema fijo de detección y extinción de fuego, controlado desde la cabina de mando.'},
+{c:'general',q:'¿Cuál es la fuente PRIMARIA de suministro eléctrico?',o:['Los generadores de los motores','La APU','El carro de tierra','Las baterías'],e:'Fuente primaria: generadores de los motores. Alternativas: APU o carro de tierra.'},
+{c:'general',q:'¿Cómo se controla la presión de cabina?',o:['Automáticamente por las válvulas outflow','Manualmente por la tripulación de cabina','Con la APU exclusivamente','Abriendo las salidas de emergencia'],e:'Se controla automáticamente por las válvulas outflow.'},
+{c:'general',q:'A un nivel de vuelo de 39.000 pies, ¿cuál es la altitud de cabina?',o:['8.000 pies','39.000 pies','14.000 pies','Cero (nivel del mar)'],e:'A FL390 la altitud de cabina programada es de 8.000 pies.'},
+{c:'general',q:'¿Dónde se ubica el VCC (Video Control Center)?',o:['En el OHB junto a la puerta 1L','Junto a la puerta 4L','En la cabina de mando','En el galley posterior'],e:'El VCC está en el OHB junto a la puerta 1L.'},
+{c:'general',q:'En una descompresión de cabina, la energía del sistema PED (computadores de pasajeros):',o:['Se corta automáticamente','Se mantiene activa','La corta manualmente la TC','Aumenta su potencia'],e:'En descompresión, la energía del PED se corta automáticamente.'},
+
+/* ---------- CABINA DE PASAJEROS ---------- */
+{c:'cabina',q:'Según el material, ¿cuál es la configuración de pasajeros del A320?',o:['186','150','220','174'],e:'Configuración 186 pasajeros.'},
+{c:'cabina',q:'¿Cuál es el elemento de flotación de los asientos de pasajeros?',o:['Cojín o chaleco salvavidas','Solo chaleco','Solo cojín','Una balsa individual'],e:'El elemento de flotación es cojín o chaleco, según el asiento.'},
+{c:'cabina',q:'¿En qué filas se ubica el sector alar (sector alarm) del A320?',o:['Filas 11 y 12 / 12 y 13','Filas 1 y 2','Filas 22 y 23','Filas 30 y 31'],e:'El sector alarm está en las filas 11 y 12 / 12 y 13.'},
+{c:'cabina',q:'Respecto a las máscaras de oxígeno en cabina de pasajeros:',o:['Hay 1 máscara adicional en todas las filas de asientos','Hay una sola máscara por asiento sin extras','No hay máscaras sobre los asientos','Solo hay máscaras en el sector alar'],e:'Hay 1 máscara adicional en todas las filas de asientos.'},
+{c:'cabina',q:'¿Qué asientos de pasajeros NO son reclinables?',o:['Los ubicados en los accesos a la salida de emergencia','Los de primera fila','Los del sector alar','Todos reclinan por igual'],e:'No reclinan los respaldos en los accesos a la salida de emergencia.'},
+{c:'cabina',q:'En el chequeo pre-vuelo, ¿cuántos asientos se verifican aleatoriamente por zona?',o:['Al menos 8 asientos por zona de responsabilidad','Todos los asientos','3 asientos por zona','Solo los de salida de emergencia'],e:'Verificación aleatoria de al menos 8 asientos por zona de responsabilidad.'},
+{c:'cabina',q:'¿Qué elemento de oxígeno contiene cada PSU?',o:['Un generador químico de oxígeno','Un tanque de oxígeno gaseoso','Una máscara quick donning','Una botella portátil'],e:'Cada PSU tiene un compartimento con un generador químico de oxígeno.'},
+{c:'cabina',q:'¿Qué tienen los OHB para transitar por el pasillo con seguridad?',o:['Pasamanos y una barra stopper','Cinturones de sujeción','Máscaras de oxígeno','Extintores'],e:'Los OHB tienen pasamanos y una barra stopper para mantener objetos dentro.'},
+{c:'cabina',q:'El extintor de los baños contiene:',o:['Halon / Freón','Agua a presión','CO2','Polvo químico seco'],e:'El extintor fijo del baño es una esfera roja que contiene Halon / Freón.'},
+{c:'cabina',q:'¿En qué rango debe estar el manómetro del extintor del baño?',o:['Rango verde','Rango rojo','Rango ámbar','Cualquier rango sirve'],e:'El manómetro debe estar en rango verde para asegurar la correcta operación.'},
+{c:'cabina',q:'¿Qué señal auditiva emite el detector de humo en los parlantes de cabina?',o:['Triple chime LO repetitivo (30 segundos)','Un solo chime HI','Una sirena continua','Ninguna, solo señal visual'],e:'Triple chime LO repetitivo durante 30 segundos en los parlantes de cabina.'},
+{c:'cabina',q:'Al detectar humo, ¿a qué sistema se envía la señal de alerta?',o:['Al CIDS','Al ECAM','A la APU','Al FADEC'],e:'La señal se envía al CIDS, que activa las indicaciones en cabina de pasajeros y de mando.'},
+{c:'cabina',q:'¿Qué hacen los botones Reset / Smoke Reset ante una alarma de humo?',o:['Silencian las señales auditivas','Apagan el detector permanentemente','Cortan el oxígeno','Abren las válvulas de humo'],e:'Silencian las señales auditivas; las visuales se apagan cuando cesa el humo en el ducto.'},
+{c:'cabina',q:'¿Qué sistema opera, controla y monitorea los sistemas principales de la cabina?',o:['CIDS (Cabin Intercommunication Data System)','ECAM','FAP','APU'],e:'El CIDS controla y monitorea aire acondicionado, comunicaciones, fuego, iluminación y agua/desechos.'},
+{c:'cabina',q:'¿Qué dos formatos puede tener el FAP?',o:['Pantalla táctil (touch screen) o pantalla de botones','Solo pantalla táctil','Solo botones físicos','Pantalla analógica de agujas'],e:'El FAP puede ser pantalla táctil o pantalla rígida de botones.'},
+{c:'cabina',q:'¿Qué botón del FAP se presiona para reportar cabina lista a la cabina de mando?',o:['CABIN READY','CABIN STATUS','SCREEN OFF','CAUT'],e:'El botón CABIN READY reporta a la cabina de mando previo a despegue y aterrizaje.'},
+{c:'cabina',q:'La hard key EMER del FAP:',o:['Activa el sistema de iluminación de emergencia','Silencia la alarma de humo','Activa la evacuación','Apaga la pantalla'],e:'EMER activa el sistema de iluminación de emergencia.'},
+{c:'cabina',q:'La hard key LAV MAINT del FAP:',o:['Lleva las luces del baño a máxima intensidad para mantenimiento','Bloquea la puerta del baño','Corta el agua del baño','Activa el extintor'],e:'LAV MAINT lleva las luces de baño a máxima intensidad para mantenimiento.'},
+{c:'cabina',q:'La hard key SCREEN 30 SECs LOCK sirve para:',o:['Modo pasivo por 30 segundos para limpieza','Apagar el FAP 30 minutos','Bloquear la puerta del cockpit','Reiniciar el CIDS'],e:'Pone la pantalla en modo pasivo por 30 segundos para poder limpiarla.'},
+{c:'cabina',q:'¿Dónde se ubica el AAP (Additional Attendant Panel)?',o:['Al costado de la puerta 4L','Junto a la puerta 1L','En la cabina de mando','En cada galley'],e:'El AAP es un panel de switches ubicado al costado de la puerta 4L.'},
+{c:'cabina',q:'El AIP (Attendant Indication Panel) en verde fija indica:',o:['Información de comunicación normal','Emergencia','Alarma de humo','Falla del sistema'],e:'Verde fija = comunicación normal. Roja intermitente = emergencia / humo / EVAC.'},
+{c:'cabina',q:'En el ACP (Area Call Panel), ¿qué luz es SIEMPRE fija y nunca intermitente?',o:['La luz azul de llamada de pasajeros a la TC','La luz roja de emergencia','La luz ámbar de humo','Todas parpadean'],e:'Solo la luz azul de llamada de pasajeros a TC es siempre fija.'},
+{c:'cabina',q:'¿En qué rango se puede controlar la temperatura de cabina?',o:['Entre 18°C y 30°C','Entre 10°C y 25°C','Entre 20°C y 40°C','Temperatura fija, no ajustable'],e:'Los selectores controlan la temperatura entre 18°C y 30°C.'},
+{c:'cabina',q:'¿En cuánto está limitada la variación de temperatura desde el FAP?',o:['2,5°C más o 2,5°C menos que lo seleccionado en cabina de mando','5°C en cualquier sentido','No tiene límite','No se puede modificar desde el FAP'],e:'Desde el FAP la variación está limitada a ±2,5°C respecto a lo seleccionado en cabina de mando.'},
+{c:'cabina',q:'¿Cuál es la capacidad del tanque de agua potable?',o:['200 litros','170 litros','100 litros','300 litros'],e:'Un tanque de 200 litros provee agua a galleys y baños.'},
+{c:'cabina',q:'¿Cuál es la capacidad del estanque de desechos?',o:['170 litros','200 litros','120 litros','250 litros'],e:'El estanque de desechos tiene una capacidad de 170 litros.'},
+{c:'cabina',q:'¿Cuántos interfonos hay en las estaciones de TC?',o:['3 interfonos (en las puertas)','1 interfono','4 interfonos','2 interfonos'],e:'Hay 3 interfonos en las estaciones de TC de las puertas, más 1 en la cabina de mando.'},
+{c:'cabina',q:'La señal auditiva de la interfonía se inhibe durante:',o:['El despegue y el aterrizaje','El crucero','El rodaje','Toda la fase de vuelo'],e:'La señal auditiva de interfonía se inhibe en despegue y aterrizaje.'},
+{c:'cabina',q:'¿Cuál es el orden de prioridades del sistema PA?',o:['1) Cockpit  2) Cabina de pasajeros  3) Entretenimiento','1) Cabina de pasajeros  2) Cockpit  3) Entretenimiento','1) Entretenimiento  2) Cockpit  3) Cabina','Todos tienen igual prioridad'],e:'Prioridad PA: 1) Cockpit, 2) Cabina de pasajeros, 3) Sistema de entretenimiento.'},
+{c:'cabina',q:'Con el switch EVAC en posición CAPT & PURS, el comando de evacuación puede activarse desde:',o:['La cabina de mando y el FAP','Solo la cabina de mando','Solo el FAP','Solo el AAP'],e:'CAPT & PURS: EVAC puede activarse desde cabina de mando y FAP. CAPT: solo cockpit.'},
+{c:'cabina',q:'El jumpseat estándar tiene el respaldo:',o:['Adosado a la pared (90°), sin reclinación','Reclinable hasta 45°','Giratorio 360°','Con reclinación eléctrica'],e:'El jumpseat estándar tiene el respaldo adosado a la pared (90°), sin reclinación.'},
+{c:'cabina',q:'¿Para qué debe usarse el jumpseat giratorio en despegue y aterrizaje?',o:['Para mantener control visual de la cabina','Para descansar','Para operar el FAP','Para vigilar la cabina de mando'],e:'El jumpseat giratorio se usa para mantener control visual de la cabina.'},
+
+/* ---------- SALIDAS DE EMERGENCIA ---------- */
+{c:'salidas',q:'¿Cuántas puertas y salidas sobre el sector alar tiene el A320?',o:['4 puertas y 4 salidas sobre el sector alar','2 puertas y 4 salidas','6 puertas y 2 salidas','4 puertas y 2 salidas'],e:'El A320 tiene 4 puertas (salidas principales a nivel de piso) y 4 salidas sobre el sector alar.'},
+{c:'salidas',q:'Las puertas del A320 se consideran:',o:['Salidas principales, a nivel de piso','Salidas secundarias','Solo salidas de servicio','Salidas sobre el ala'],e:'Las puertas son salidas a nivel de piso, consideradas salidas principales.'},
+{c:'salidas',q:'En el A320, las puertas del lado izquierdo y derecho son:',o:['Izquierdo = acceso de pasajeros; Derecho = servicio','Izquierdo = servicio; Derecho = pasajeros','Ambos lados de pasajeros','Ambos lados solo de servicio'],e:'Lado izquierdo: puertas de acceso de pasajeros. Lado derecho: puertas de servicio.'},
+{c:'salidas',q:'¿Con qué dispositivo están equipadas las salidas sobre el sector alar?',o:['Tobogán rampa (no se desconecta del avión)','Tobogán balsa desconectable','Ningún dispositivo','Una escalera plegable'],e:'Las salidas del sector alar tienen tobogán rampa, que no se desconecta del avión.'},
+{c:'salidas',q:'El indicador Locked/Unlocked de la puerta muestra:',o:['LOCKED en verde (asegurada) / UNLOCKED en rojo (no asegurada)','LOCKED en rojo / UNLOCKED en verde','Siempre en ámbar','No existe tal indicador'],e:'Puerta asegurada: LOCKED en verde. No asegurada: UNLOCKED en rojo.'},
+{c:'salidas',q:'¿Qué indica la luz blanca fija SLIDE ARMED?',o:['Que el tobogán está armado','Que la puerta está abierta','Presión residual en cabina','Que el tobogán está desarmado'],e:'SLIDE ARMED (luz blanca fija) alerta que el tobogán está armado.'},
+{c:'salidas',q:'La luz roja intermitente CABIN PRESSURE advierte que:',o:['Hay presión residual y la puerta NO debe ser abierta','El tobogán está armado','La cabina está lista','Falta oxígeno'],e:'CABIN PRESSURE: presión residual con motor apagado y tobogán desarmado; no abrir la puerta.'},
+{c:'salidas',q:'El actuador de la puerta es:',o:['Un cilindro de nitrógeno presurizado que asiste la apertura en emergencia','Un motor eléctrico','Un resorte mecánico','Una bomba hidráulica'],e:'El actuador es un cilindro de nitrógeno presurizado que empuja la puerta en emergencia.'},
+{c:'salidas',q:'En el chequeo pre-vuelo de puertas, el tobogán debe estar:',o:['Desarmado, con indicador de piso no alineado y presión en rango verde','Armado y con visor rojo','Desconectado del avión','Inflado parcialmente'],e:'Pre-vuelo: tobogán desarmado, indicador de piso no alineado, presión del tobogán en rango verde.'},
+{c:'salidas',q:'Al ARMAR el tobogán, el visor debe quedar en:',o:['ARMED (rojo), con círculo y flecha alineados','DISARMED (verde)','ARMED (verde)','Sin indicación'],e:'Tobogán armado: visor en ARMED (rojo), círculo y flecha alineados, pin en el brazo de la puerta.'},
+{c:'salidas',q:'Al DESARMAR el tobogán, el visor debe quedar en:',o:['DISARMED (verde), con círculo y flecha NO alineados','ARMED (rojo)','DISARMED (rojo)','Intermitente'],e:'Tobogán desarmado: visor en DISARMED (verde), círculo y flecha no alineados.'},
+{c:'salidas',q:'Con las puertas EN AUTOMÁTICO, ¿de qué color se ve DOORS/SLIDES en el FAP?',o:['Verde','Ámbar','Rojo','Azul'],e:'Puertas en automático (armadas): FAP DOORS/SLIDES en verde. En manual: ámbar.'},
+{c:'salidas',q:'Con las puertas EN MANUAL, ¿de qué color se ve DOORS AND SLIDES en el FAP?',o:['Ámbar','Verde','Rojo','Blanco'],e:'Puertas en manual (desarmadas): FAP DOORS AND SLIDES en ámbar.'},
+{c:'salidas',q:'En el FAP touch screen, una puerta ABIERTA se muestra con:',o:['Un rectángulo rojo en la parte exterior del diagrama','Un rectángulo verde interior','Un rectángulo ámbar interior','Un círculo azul'],e:'Puerta abierta: rectángulo rojo exterior. Tobogán desarmado: ámbar interior. Armado: verde interior.'},
+{c:'salidas',q:'Antes de abrir la puerta desde el exterior se debe verificar que la luz CABIN PRESSURE esté:',o:['Apagada','Roja fija','Roja intermitente','Verde'],e:'Se mira por el visor y se verifica la luz CABIN PRESSURE apagada antes de abrir.'},
+{c:'salidas',q:'Las Life Lines (cuerdas de la zona alar) se usan para:',o:['Evacuación en agua: sujeción y protección de pasajeros y tripulación sobre el ala','Amarrar el equipaje','Conectar el kit de supervivencia','Sujetar el tobogán rampa'],e:'Las Life Lines se instalan al abrir las salidas del ala para evacuación en agua.'},
+{c:'salidas',q:'La Zona A de responsabilidad abarca:',o:['Desde el sector FWD hasta las salidas del sector alar','Desde las salidas del ala hasta el sector AFT','Solo la cabina de mando','Solo los galleys'],e:'Zona A: desde el sector FWD hasta las salidas del sector alar. Zona C: desde el ala hasta el AFT.'},
+{c:'salidas',q:'¿Se puede usar el tobogán rampa del sector alar en un amaraje?',o:['No, porque no se desconecta del avión','Sí, funciona como balsa','Sí, si se infla manualmente','Solo con el kit de supervivencia'],e:'Las salidas del ala sí pueden usarse en amaraje, pero el tobogán rampa no, ya que no se desconecta del avión.'},
+
+/* ---------- ILUMINACIÓN ---------- */
+{c:'iluminacion',q:'¿Desde dónde controla la TC la iluminación de cabina?',o:['Desde el FAP y desde el AAP','Solo desde la cabina de mando','Solo desde cada PSU','Desde el galley'],e:'La TC controla las luces de cabina desde el FAP y desde el AAP.'},
+{c:'iluminacion',q:'En el AAP, los niveles CABIN BRT / DIM 1 / DIM 2 corresponden aproximadamente a:',o:['100%, 50% y 10% de intensidad','100%, 75% y 50%','80%, 40% y 20%','100%, 25% y 5%'],e:'BRT = 100%, DIM 1 ≈ 50%, DIM 2 ≈ 10%.'},
+{c:'iluminacion',q:'Las luces de trabajo de la TC son:',o:['Luces de alta intensidad cerca de jumpseats y galleys, control manual','Luces tenues del pasillo','Luces de lectura del PSU','Luces de emergencia del piso'],e:'Son de alta intensidad, cerca de jumpseats y galleys, encendido/apagado manual con botón.'},
+{c:'iluminacion',q:'El reseteo general de todas las luces de lectura desde el FAP touch screen solo es posible cuando:',o:['El avión se encuentra en tierra','El avión está en crucero','Hay una emergencia','Nunca, solo individual'],e:'El reset de todas las luces de lectura a la vez solo es posible en tierra desde el FAP touch screen.'},
+{c:'iluminacion',q:'En el FAP, ¿qué botón enciende todas las luces de lectura a la vez?',o:['R/L SET','R/L RESET','LIGHTS MAIN','CABIN BRT'],e:'R/L SET enciende todas; R/L RESET las apaga todas.'},
+{c:'iluminacion',q:'Cuando la puerta del baño está DESASEGURADA, las luces:',o:['Los tubos fluorescentes bajan de intensidad, se enciende la luz auxiliar y se apaga la del espejo','Se apagan por completo','Se encienden a máxima intensidad','Parpadean en rojo'],e:'Un micro switch detecta la puerta desasegurada: fluorescentes tenues, luz auxiliar ON, luz del espejo OFF.'},
+{c:'iluminacion',q:'En operación NORMAL, ¿cuándo se encienden automáticamente las luces fijas Exit y los Exit Markers?',o:['Cuando el tren de aterrizaje está abajo','Solo en emergencia','Al arrancar los motores','Cuando se arma el tobogán'],e:'Con el tren de aterrizaje abajo se encienden automáticamente las luces fijas Salida/Exit y los Exit Markers.'},
+{c:'iluminacion',q:'La iluminación de emergencia se activa automáticamente cuando:',o:['Se corta el suministro eléctrico normal (switch en ARM) o hay pérdida de presión de cabina','Solo si la activa la TC','Únicamente con el tren abajo','Al encender la APU'],e:'Se activa automáticamente al perder energía normal (switch en ARM) o al perder presión de cabina.'},
+{c:'iluminacion',q:'¿Qué son las indicaciones luminosas de piso?',o:['Franjas fotoluminiscentes que se interrumpen al llegar a la salida','Luces láser de emergencia','Focos del techo','Luces de los toboganes'],e:'Franjas fotoluminiscentes en el piso, alternativa cuando hay humo o no se ven las señales de salida.'},
+{c:'iluminacion',q:'Los Exit Markers son:',o:['Indicaciones Salida/Exit próximas al piso, cerca de las salidas de emergencia','Luces de techo del pasillo','Focos exteriores del ala','Botones de apertura de puerta'],e:'Exit Markers: indicaciones Salida/Exit próximas al piso, cerca de las salidas.'},
+{c:'iluminacion',q:'Las luces de las salidas del sector alar se activan:',o:['Solo cuando se remueve la cubierta de la salida en el interior de la cabina','Automáticamente en todo despegue','Con el tren abajo','Desde el PSU'],e:'Se activan solo al remover la cubierta de la salida; también se ilumina el área de la manija.'},
+{c:'iluminacion',q:'El chequeo pre-vuelo de las luces de emergencia se realiza:',o:['Presionando el botón EMER en el FAP','Presionando CABIN READY','Desde cada PSU','Desde la cabina de mando únicamente'],e:'Se verifican las luces de emergencia presionando el botón EMER en el FAP.'},
+
+/* ---------- DISPOSITIVOS DE EVACUACIÓN ---------- */
+{c:'evacuacion',q:'¿En cuánto tiempo se infla automáticamente el tobogán?',o:['Aproximadamente 5 segundos','Aproximadamente 15 segundos','Aproximadamente 1 segundo','Aproximadamente 30 segundos'],e:'El tobogán se infla automáticamente en 5 segundos aproximadamente.'},
+{c:'evacuacion',q:'¿Cómo se infla manualmente el tobogán?',o:['Tirando la manilla roja PULL TO INFLATE ubicada en el piso','Presionando un botón verde','Con una bomba manual','Girando una válvula lateral'],e:'Se infla manualmente tirando la manilla roja PULL TO INFLATE, ubicada en el piso.'},
+{c:'evacuacion',q:'El tobogán simple, en evacuación en tierra, tiene:',o:['1 carril, flujo de 1 pasajero por segundo','2 carriles, 2 pasajeros por segundo','3 carriles','1 carril, 3 pasajeros por segundo'],e:'Tobogán simple en tierra: 1 carril, flujo de 1 pasajero por segundo.'},
+{c:'evacuacion',q:'¿El tobogán simple tiene características de balsa?',o:['No tiene características de balsa','Sí, es una balsa completa','Solo con el kit de supervivencia','Sí, para 20 personas'],e:'El tobogán simple sirve como flotación pero NO tiene características de balsa; las personas se sujetan sin abordarlo.'},
+{c:'evacuacion',q:'El tobogán balsa en modo tobogán (tierra) tiene:',o:['2 carriles, flujo de 2 pasajeros por segundo','1 carril, 1 pasajero por segundo','4 carriles','2 carriles, 1 pasajero por segundo'],e:'Tobogán balsa modo tobogán: 2 carriles, 2 pasajeros por segundo.'},
+{c:'evacuacion',q:'¿Cuál es la secuencia para DESCONECTAR el tobogán/tobogán balsa?',o:['Levantar cubierta FOR DITCHING ONLY, tirar la manija blanca HANDLE y cortar la mooring line con el cuchillo','Solo cortar la mooring line','Tirar PULL TO INFLATE','Desinflar y arrastrar'],e:'Se levanta la cubierta FOR DITCHING ONLY, se tira la manija blanca HANDLE y se corta la mooring line con el cuchillo.'},
+{c:'evacuacion',q:'¿Qué es la mooring line?',o:['La cuerda de amarre que une el tobogán al avión','La cuerda de reingreso al avión','La cuerda del kit de supervivencia','La cuerda de las Life Lines'],e:'La mooring line (cuerda de amarre) une el tobogán/balsa al avión.'},
+{c:'evacuacion',q:'¿Cuántos kits de supervivencia hay y dónde se ubican?',o:['1 por cada tobogán balsa, en OHB cercanos a las puertas (2 por sector)','1 solo para todo el avión','Uno por pasajero','En la bodega de carga'],e:'Hay 1 kit de supervivencia por cada tobogán balsa, en OHB cercanos a las puertas (2 en cada sector).'},
+{c:'evacuacion',q:'En operación extendida sobre agua, ¿cuántas balsas adicionales se incorporan en el A320?',o:['4 balsas adicionales, capacidad 46-69 c/u','2 balsas','8 balsas','Ninguna, bastan los toboganes'],e:'Se incorporan 4 balsas adicionales en OHB, con capacidad de 46-69 personas cada una.'},
+{c:'evacuacion',q:'El tobogán rampa del sector alar:',o:['No se puede desconectar y se encuentra siempre armado','Se desconecta como balsa','Está siempre desarmado','Se infla en 30 segundos'],e:'El tobogán rampa no se desconecta del avión y está siempre armado.'},
+{c:'evacuacion',q:'Si falla el sistema de inflado del tobogán rampa, este:',o:['Se puede usar como lona deslizante','Queda inutilizable','Se infla con una bomba manual','Se reemplaza por el tobogán balsa'],e:'En caso de falla de inflado, el tobogán rampa se puede usar como lona deslizante.'},
+{c:'evacuacion',q:'¿Cómo se debe saltar al tobogán para evacuar?',o:['Con los pies y las manos hacia adelante','Sentado y de espaldas','De costado','Acostado boca abajo'],e:'Para evacuar se debe saltar al tobogán con pies y manos hacia adelante.'},
+{c:'evacuacion',q:'El tobogán rampa se despliega:',o:['Hacia el borde de fuga del ala','Hacia el borde de ataque','Hacia adelante del fuselaje','Hacia abajo, verticalmente'],e:'El tobogán rampa se despliega hacia el borde de fuga del ala.'},
+
+/* ---------- OXÍGENO ---------- */
+{c:'oxigeno',q:'En la cabina de pasajeros, ¿cómo se produce el oxígeno?',o:['Por generadores químicos','Por un tanque presurizado central','Por la APU','Por compresores eléctricos'],e:'En cabina de pasajeros el oxígeno es producido por generadores químicos.'},
+{c:'oxigeno',q:'Cada máscara oronasal de pasajero está adosada a:',o:['Una bolsa de almacenamiento de oxígeno conectada por manguera al generador','Un tanque individual','Una botella portátil','El sistema de la cabina de mando'],e:'Cada máscara oronasal está adosada a una bolsa de almacenamiento, conectada por manguera al generador.'},
+{c:'oxigeno',q:'¿Cuáles son las tres formas de activación del sistema de oxígeno de pasajeros?',o:['Automática, desde la cabina de mando y manual','Solo automática','Automática y por la TC','Solo manual con MRT'],e:'Se activa automáticamente, desde la cabina de mando (TM) o manualmente.'},
+{c:'oxigeno',q:'¿A qué altitud de cabina se activa automáticamente el sistema de oxígeno de pasajeros?',o:['A 14.000 pies','A 8.000 pies','A 10.000 pies','A 39.000 pies'],e:'Opera automáticamente cuando la altitud de cabina llega a una presión equivalente a 14.000 pies.'},
+{c:'oxigeno',q:'¿Con qué herramienta se activa manualmente el oxígeno de un PSU?',o:['Con el MRT (Manual Release Tool)','Con una llave Allen','Con el key pad','Con un extintor'],e:'Se usa el MRT introduciendo su punta en el orificio del PSU para desasegurar la tapa.'},
+{c:'oxigeno',q:'¿Cuántos MRT hay en el avión y dónde se ubican?',o:['4 MRT, en algunos jumpseats según el plano de emergencia','1 MRT en el galley','2 MRT en la cabina de mando','Uno por cada PSU'],e:'Hay 4 MRT ubicados en algunos jumpseats, según el plano de equipos de emergencia.'},
+{c:'oxigeno',q:'El oxígeno de la cabina de mando se provee mediante:',o:['Un tanque que alimenta 4 máscaras quick donning','Generadores químicos','El sistema de pasajeros','Botellas portátiles individuales'],e:'Un tanque provee oxígeno a 4 máscaras quick donning ubicadas a cada lado del cockpit.'},
+
+/* ---------- CABINA DE MANDO ---------- */
+{c:'mando',q:'¿Para cuántos ocupantes está diseñada la cabina de mando?',o:['2 tripulantes de mando y 2 observadores','2 pilotos solamente','3 pilotos','4 pilotos y 1 observador'],e:'Está diseñada para dos tripulantes de mando y dos observadores (asientos plegables).'},
+{c:'mando',q:'La puerta de la cabina de mando es:',o:['Blindada y se asegura automáticamente al estar cerrada','De vidrio reforzado','Corrediza y sin blindaje','Abierta durante el vuelo'],e:'La puerta es blindada, se asegura automáticamente y tiene un visor a la cabina de pasajeros.'},
+{c:'mando',q:'En una emergencia, ¿cómo puede abrir la TC la puerta del cockpit?',o:['Introduciendo un código en el key pad instalado al costado del FAP','Con una llave física','Empujando fuerte la puerta','No puede abrirla nunca'],e:'La TC puede abrirla en emergencia introduciendo un código en el key pad, al costado del FAP.'},
+{c:'mando',q:'¿Dónde se encuentra el cerrojo de seguridad de la puerta del cockpit?',o:['A nivel del centro de la puerta, al costado izquierdo','En la parte superior','En el piso','En el key pad'],e:'Si un seguro falla, hay un cerrojo de seguridad al centro de la puerta, costado izquierdo.'},
+{c:'mando',q:'Las ventanas de la cabina de mando:',o:['Solo se pueden abrir desde el interior y sirven como vía de evacuación alternativa','Se abren desde el exterior','No se abren nunca','Se abren automáticamente en emergencia'],e:'Se abren solo desde el interior y sirven como vías de evacuación alternativas.'},
+{c:'mando',q:'La cuerda de escape (escape rope) del cockpit:',o:['Mide 5,5 m con nudos y soporta 181 kg','Mide 10 m sin nudos','Soporta 90 kg','Está en la cabina de pasajeros'],e:'Escape rope: 5,5 metros con nudos, almacenada sobre cada ventana, soporta 181 kg.'},
+{c:'mando',q:'Las máscaras quick donning de la cabina de mando cuentan con:',o:['Arnés inflable de ajuste automático, micrófono integrado y gafas contra humo','Solo la máscara oronasal','Bolsa de almacenamiento como las de pasajeros','Generador químico'],e:'Tienen arnés inflable de ajuste automático, micrófono integrado y gafas contra humo.'},
+{c:'mando',q:'En el selector N/100% SEL de la máscara quick donning, la posición 100% provee:',o:['Oxígeno puro','Una mezcla de aire ambiente y oxígeno','Solo aire ambiente','Sobrepresión'],e:'100% = oxígeno puro. Posición N = mezcla a demanda de aire ambiente y oxígeno.'},
+{c:'mando',q:'El selector de sobre presión (Emergency) de la máscara quick donning sirve para:',o:['Eliminar condensación y prevenir la entrada de humo, olores o ceniza','Aumentar el volumen del micrófono','Desinflar el arnés','Cerrar las gafas'],e:'Genera sobrepresión que elimina condensación y evita la entrada de humo, olores o ceniza.'},
+{c:'mando',q:'¿Qué ocurre al presionar los clips rojos de la máscara quick donning?',o:['Se libera la máscara del compartimento y el arnés se infla','Se corta el oxígeno','Se activa la sobrepresión','Se apaga el micrófono'],e:'Al presionar los clips rojos se libera la máscara y el arnés se infla; al soltarlos se ajusta a la cabeza.'},
+{c:'mando',q:'Los asientos de la TM (Comandante y Primer Oficial) disponen de:',o:['Cinturón, arnés, máscara quick donning, chaleco salvavidas, chaleco luminiscente y linterna','Solo cinturón de seguridad','Máscara oronasal de pasajero','Paracaídas'],e:'Disponen de cinturón, arnés, máscara quick donning, chaleco salvavidas, chaleco luminiscente y linterna.'},
+];
+
+/* Reparto categoría en cada pregunta ya está en .c */
+const byCat = {};
+CATS.forEach(c=>byCat[c.id]=[]);
+Q.forEach((q,i)=>{q._i=i; byCat[q.c].push(q);});
+
+/* ============================ ESTADO / STORAGE ============================ */
+const LS='a320preg_v1';
+let store = load();
+function load(){ try{return JSON.parse(localStorage.getItem(LS))||{}}catch(e){return{}} }
+function save(){ try{localStorage.setItem(LS,JSON.stringify(store))}catch(e){} }
+store.cat = store.cat || {};              // {catId:{ans, ok}}
+store.bestStreak = store.bestStreak || 0;
+store.totalAns = store.totalAns || 0;
+store.totalOk = store.totalOk || 0;
+store.sound = store.sound===undefined ? true : store.sound;
+CATS.forEach(c=>{ if(!store.cat[c.id]) store.cat[c.id]={ans:0,ok:0}; });
+
+const CROWN_THRESHOLD = 12;   // aciertos acumulados para "coronar" una categoría
+function crownsCount(){ return CATS.filter(c=>store.cat[c.id].ok>=CROWN_THRESHOLD).length; }
+
+/* ============================ SONIDO ============================ */
+let actx=null;
+function beep(freq,dur,type){ if(!store.sound)return; try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); const o=actx.createOscillator(),g=actx.createGain(); o.type=type||'sine'; o.frequency.value=freq; o.connect(g); g.connect(actx.destination); g.gain.setValueAtTime(.08,actx.currentTime); g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+dur); o.start(); o.stop(actx.currentTime+dur);}catch(e){} }
+function sndOk(){ beep(660,.09); setTimeout(()=>beep(880,.14),90); }
+function sndBad(){ beep(200,.25,'square'); }
+function sndTick(){ beep(1200,.03); }
+
+/* ============================ NAV ============================ */
+const screens=['homeScreen','wheelScreen','quizScreen','resultScreen'];
+function show(id){ screens.forEach(s=>document.getElementById(s).classList.toggle('hidden',s!==id)); window.scrollTo(0,0); }
+function goHome(){ clearInterval(timerInt); renderHome(); show('homeScreen'); }
+
+/* ============================ HOME ============================ */
+function renderHome(){
+  document.getElementById('qtotal').textContent=Q.length;
+  document.getElementById('stStreak').textContent=store.bestStreak;
+  const acc = store.totalAns? Math.round(store.totalOk/store.totalAns*100):0;
+  document.getElementById('stAcc').textContent=acc+'%';
+  document.getElementById('stCrowns').textContent=crownsCount()+'/7';
+  document.getElementById('soundBtn').textContent=store.sound?'🔊':'🔇';
+
+  const grid=document.getElementById('catGrid'); grid.innerHTML='';
+  CATS.forEach(c=>{
+    const st=store.cat[c.id];
+    const pct=Math.min(100,Math.round(st.ok/CROWN_THRESHOLD*100));
+    const crowned=st.ok>=CROWN_THRESHOLD;
+    const el=document.createElement('button');
+    el.className='catcard';
+    el.style.borderColor=crowned?c.color:'var(--line)';
+    el.innerHTML=`
+      <span class="crown ${crowned?'on':''}">👑</span>
+      <div class="cc-top"><span class="cc-em">${c.emoji}</span><span class="cc-name">${c.short}</span></div>
+      <div class="cc-bar"><div class="cc-fill" style="width:${pct}%;background:${c.color}"></div></div>
+      <div class="cc-meta"><span>${byCat[c.id].length} preg.</span><span>${st.ok}/${CROWN_THRESHOLD} 👑</span></div>`;
+    el.onclick=()=>startCategory(c.id);
+    grid.appendChild(el);
+  });
+}
+document.getElementById('soundBtn').onclick=()=>{ store.sound=!store.sound; save(); document.getElementById('soundBtn').textContent=store.sound?'🔊':'🔇'; if(store.sound)sndOk(); };
+document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>startMode(b.dataset.mode));
+
+/* ============================ MOTOR DE JUEGO ============================ */
+let game=null, timerInt=null;
+const TIMER_SECS=22;
+
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function buildQueue(pool,n){ return shuffle(pool).slice(0,n); }
+
+function startMode(mode){
+  if(mode==='ruleta'){
+    game={mode,lives:3,streak:0,score:0,ans:0,ok:0,per:{},current:null,timed:true};
+    show('wheelScreen'); updateWheelHud(); setupWheel();
+  } else if(mode==='examen'){
+    game={mode,queue:buildQueue(Q,20),idx:0,score:0,ans:0,ok:0,per:{},timed:true,lives:null};
+    startQuiz();
+  } else if(mode==='flash'){
+    game={mode,queue:buildQueue(Q,10),idx:0,score:0,ans:0,ok:0,per:{},timed:false,lives:null};
+    startQuiz();
+  }
+}
+function startCategory(catId){
+  game={mode:'cat',catId,queue:buildQueue(byCat[catId],Math.min(12,byCat[catId].length)),idx:0,score:0,ans:0,ok:0,per:{},timed:false,lives:null};
+  startQuiz();
+}
+
+/* ---------- RULETA ---------- */
+let wheelRot=0;
+function updateWheelHud(){
+  document.getElementById('wLives').textContent='❤️'.repeat(game.lives)+'🖤'.repeat(3-game.lives);
+  document.getElementById('wStreak').textContent='🔥'+game.streak;
+}
+function setupWheel(){
+  const wheel=document.getElementById('wheel');
+  const n=CATS.length, seg=360/n;
+  // conic-gradient de fondo
+  let stops=CATS.map((c,i)=>`${c.color} ${i*seg}deg ${(i+1)*seg}deg`).join(',');
+  wheel.style.background=`conic-gradient(${stops})`;
+  wheel.innerHTML='';
+  CATS.forEach((c,i)=>{
+    const a=(i*seg+seg/2)*Math.PI/180;
+    const r=32; // % desde el centro
+    const lbl=document.createElement('div');
+    lbl.className='seg-lbl';
+    lbl.textContent=c.emoji;
+    lbl.style.transform=`translate(-50%,-50%) translate(${Math.sin(a)*r}vw,${-Math.cos(a)*r}vw)`;
+    // usar unidades relativas al box: recalculamos en px
+    wheel.appendChild(lbl);
+  });
+  // reposicionar labels en px según tamaño real
+  requestAnimationFrame(()=>{
+    const box=wheel.getBoundingClientRect(), R=box.width*0.34;
+    [...wheel.children].forEach((lbl,i)=>{
+      const a=(i*seg+seg/2)*Math.PI/180;
+      lbl.style.transform=`translate(-50%,-50%) translate(${Math.sin(a)*R}px,${-Math.cos(a)*R}px)`;
+    });
+  });
+  document.getElementById('spinBtn').disabled=false;
+  document.getElementById('spinBtn').textContent='Girar la ruleta 🎡';
+}
+document.getElementById('spinBtn').onclick=spin;
+function spin(){
+  const btn=document.getElementById('spinBtn'); btn.disabled=true; btn.textContent='Girando…';
+  const n=CATS.length, seg=360/n;
+  const target=Math.floor(Math.random()*n);
+  const center=target*seg+seg/2;
+  const base=wheelRot - (wheelRot%360);
+  wheelRot = base + 360*5 + (360-center);
+  const wheel=document.getElementById('wheel');
+  wheel.style.transform=`rotate(${wheelRot}deg)`;
+  let t=0; const ti=setInterval(()=>{ sndTick(); if(++t>10)clearInterval(ti); },260);
+  setTimeout(()=>{
+    clearInterval(ti);
+    const c=CATS[target];
+    game.current=c.id;
+    game.queue=[pickForRuleta(c.id)]; game.idx=0;
+    startQuiz(true);
+  },4100);
+}
+const seenRuleta={};
+function pickForRuleta(catId){
+  seenRuleta[catId]=seenRuleta[catId]||[];
+  let pool=byCat[catId].filter(q=>!seenRuleta[catId].includes(q._i));
+  if(!pool.length){ seenRuleta[catId]=[]; pool=byCat[catId]; }
+  const q=pool[Math.floor(Math.random()*pool.length)];
+  seenRuleta[catId].push(q._i);
+  return q;
+}
+
+/* ---------- QUIZ ---------- */
+function startQuiz(fromWheel){ show('quizScreen'); renderQuestion(); }
+
+function renderQuestion(){
+  clearInterval(timerInt);
+  const q=game.queue[game.idx];
+  const c=CATMAP[q.c];
+  document.getElementById('qFeedback').innerHTML='';
+  const badge=document.getElementById('qCat');
+  badge.textContent=c.emoji+' '+c.short; badge.style.background=c.color;
+
+  // HUD
+  const lives=document.getElementById('qLives'), streak=document.getElementById('qStreak');
+  if(game.mode==='ruleta'){ lives.textContent='❤️'.repeat(game.lives)+'🖤'.repeat(3-game.lives); streak.textContent='🔥'+game.streak; }
+  else { lives.textContent=''; streak.textContent=''; }
+
+  // progreso
+  const prog=document.getElementById('qProg');
+  if(game.mode==='ruleta'){ prog.style.width='100%'; prog.style.background=c.color; document.getElementById('qCount').textContent='Racha actual: '+game.streak+' · Puntaje: '+game.score; }
+  else { const total=game.queue.length; prog.style.width=((game.idx)/total*100)+'%'; prog.style.background='linear-gradient(90deg,var(--general),var(--oxigeno))'; document.getElementById('qCount').textContent=`Pregunta ${game.idx+1} de ${total}`; }
+
+  document.getElementById('qText').textContent=q.q;
+  document.getElementById('qText').className='qtext fade';
+
+  // opciones
+  const opts=shuffle(q.o.map((t,i)=>({t,ok:i===0})));
+  q._opts=opts;
+  const box=document.getElementById('qOpts'); box.innerHTML='';
+  const keys=['A','B','C','D'];
+  opts.forEach((o,i)=>{
+    const b=document.createElement('button');
+    b.className='opt fade';
+    b.innerHTML=`<span class="kdot">${keys[i]}</span><span>${o.t}</span>`;
+    b.onclick=()=>answer(b,o.ok,q);
+    box.appendChild(b);
+  });
+
+  // timer
+  const tf=document.getElementById('qTimer'), tl=tf.parentElement;
+  if(game.timed){
+    tl.style.display='block';
+    let secs=TIMER_SECS; tf.style.transition='none'; tf.style.width='100%'; tf.style.background='var(--ok)';
+    requestAnimationFrame(()=>{ tf.style.transition='width .25s linear,background .3s'; });
+    game._timeLeft=secs; game._t0=Date.now();
+    timerInt=setInterval(()=>{
+      secs-=0.1;
+      const pct=Math.max(0,secs/TIMER_SECS*100);
+      tf.style.width=pct+'%';
+      tf.style.background = pct>40?'var(--ok)':pct>18?'var(--gold)':'var(--bad)';
+      if(secs<=0){ clearInterval(timerInt); timeUp(q); }
+    },100);
+  } else { tl.style.display='none'; }
+}
+
+function timeUp(q){
+  const box=document.getElementById('qOpts');
+  [...box.children].forEach(b=>{ b.disabled=true; if(q._opts[[...box.children].indexOf(b)].ok) b.classList.add('correct'); else b.classList.add('dim'); });
+  sndBad();
+  registerAnswer(false,q,0);
+  showExplain(q,false,true);
+}
+
+function answer(btn,ok,q){
+  clearInterval(timerInt);
+  const box=document.getElementById('qOpts');
+  const speedFrac = game.timed ? Math.max(0,(game._timeLeft-((Date.now()-game._t0)/1000))/TIMER_SECS) : 0;
+  [...box.children].forEach(b=>{ b.disabled=true; });
+  [...box.children].forEach((b,i)=>{ if(q._opts[i].ok) b.classList.add('correct'); });
+  if(ok){ btn.classList.add('pop'); sndOk(); }
+  else { btn.classList.add('wrong'); [...box.children].forEach((b,i)=>{ if(!q._opts[i].ok && b!==btn) b.classList.add('dim'); }); sndBad(); }
+
+  let pts=0;
+  if(ok){ pts = game.timed ? 100+Math.round(speedFrac*100) : 100; }
+  registerAnswer(ok,q,pts);
+  showExplain(q,ok,false);
+}
+
+function registerAnswer(ok,q,pts){
+  game.ans++; if(ok){game.ok++; game.score+=pts;}
+  game.per[q.c]=game.per[q.c]||{ans:0,ok:0}; game.per[q.c].ans++; if(ok)game.per[q.c].ok++;
+  // stats globales + por categoría
+  store.totalAns++; if(ok)store.totalOk++;
+  store.cat[q.c].ans++; if(ok)store.cat[q.c].ok++;
+  if(game.mode==='ruleta'){
+    if(ok){ game.streak++; if(game.streak>store.bestStreak)store.bestStreak=game.streak; }
+    else { game.lives--; game.streak=0; }
+  }
+  save();
+}
+
+function showExplain(q,ok,timedout){
+  const c=CATMAP[q.c];
+  const fb=document.getElementById('qFeedback');
+  const verdict = timedout ? '⏱️ Se acabó el tiempo' : (ok?'✅ ¡Correcto!':'❌ Incorrecto');
+  const vcolor = timedout||!ok ? 'var(--bad)':'var(--ok)';
+  const last = (game.mode==='ruleta') ? game.lives<=0 : (game.idx>=game.queue.length-1);
+  let btnLabel = game.mode==='ruleta' ? (game.lives<=0?'Ver resultado':'Seguir 🎡') : (last?'Ver resultado':'Siguiente ›');
+  fb.innerHTML=`
+    <div class="explain fade" style="border-left-color:${c.color}">
+      <div class="verdict" style="color:${vcolor}">${verdict}</div>
+      <div>${q.e}</div>
+    </div>
+    <button class="next" id="nextBtn">${btnLabel}</button>`;
+  fb.querySelector('.explain').scrollIntoView({behavior:'smooth',block:'nearest'});
+  document.getElementById('nextBtn').onclick=nextStep;
+}
+
+function nextStep(){
+  if(game.mode==='ruleta'){
+    updateWheelHud && updateWheelHud();
+    if(game.lives<=0){ finish(); return; }
+    show('wheelScreen'); updateWheelHud(); setupWheel(); return;
+  }
+  game.idx++;
+  if(game.idx>=game.queue.length){ finish(); return; }
+  renderQuestion();
+}
+
+/* ============================ RESULTADO ============================ */
+function finish(){
+  clearInterval(timerInt);
+  const acc = game.ans? Math.round(game.ok/game.ans*100):0;
+  const medal=document.getElementById('rMedal'), title=document.getElementById('rTitle'), sub=document.getElementById('rSub');
+  const scoreEl=document.getElementById('rScore');
+
+  if(game.mode==='ruleta'){
+    scoreEl.textContent=game.score.toLocaleString('es');
+    title.textContent = game.streak>=store.bestStreak && game.streak>0 ? '¡Récord de racha!' : 'Fin de la ruleta';
+    sub.textContent = `Racha máxima de la partida: ${game._maxStreak||maxStreakCalc()} · Mejor histórica: ${store.bestStreak}`;
+    medal.textContent = game.ok>=10?'🏆':game.ok>=5?'🥈':'🎡';
+  } else if(game.mode==='examen'){
+    const nota=(1+ (game.ok/game.ans)*6).toFixed(1); // escala 1.0 - 7.0
+    scoreEl.textContent=nota;
+    title.textContent = nota>=4?'¡Aprobado!':'A repasar';
+    sub.textContent = `Nota ${nota} (escala 1–7) · ${game.ok}/${game.ans} correctas`;
+    medal.textContent = nota>=6.0?'🏆':nota>=4.0?'🎓':'📚';
+  } else if(game.mode==='flash'){
+    scoreEl.textContent=game.ok+'/'+game.ans;
+    title.textContent='Repaso completo';
+    sub.textContent=`${acc}% de acierto`;
+    medal.textContent=acc>=80?'⚡':acc>=50?'👍':'📖';
+  } else { // categoría
+    const c=CATMAP[game.catId];
+    scoreEl.textContent=game.ok+'/'+game.ans;
+    title.textContent=c.emoji+' '+c.name;
+    const crowned=store.cat[game.catId].ok>=CROWN_THRESHOLD;
+    sub.textContent=`${acc}% de acierto` + (crowned?' · 👑 ¡Categoría coronada!':` · ${store.cat[game.catId].ok}/${CROWN_THRESHOLD} para la corona`);
+    medal.textContent=crowned?'👑':acc>=80?'🌟':'📘';
+  }
+
+  document.getElementById('rCorrect').textContent=game.ok;
+  document.getElementById('rAcc').textContent=acc+'%';
+
+  // desglose por categoría
+  const bd=document.getElementById('rBreak'); bd.innerHTML='';
+  const cats=Object.keys(game.per);
+  if(cats.length>1){
+    bd.innerHTML='<div class="section-t" style="margin:14px 4px 6px">Por categoría</div>';
+    cats.forEach(id=>{
+      const c=CATMAP[id], p=game.per[id], pct=Math.round(p.ok/p.ans*100);
+      const row=document.createElement('div'); row.className='rrow';
+      row.innerHTML=`<span class="rdot" style="background:${c.color}"></span><span class="rname">${c.emoji} ${c.short}</span><span class="rpct">${p.ok}/${p.ans} · ${pct}%</span>`;
+      bd.appendChild(row);
+    });
+  }
+
+  if(game.ok>=1 && (game.mode==='examen'||game.mode==='ruleta')) sndOk();
+  show('resultScreen');
+}
+function maxStreakCalc(){ return store.bestStreak; }
+
+document.getElementById('rReplay').onclick=()=>{
+  if(game.mode==='cat') startCategory(game.catId);
+  else startMode(game.mode);
+};
+
+/* ============================ INIT ============================ */
+renderHome();
+show('homeScreen');
+</script>
+</body>
+</html>
